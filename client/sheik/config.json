@@ -1,0 +1,40 @@
+[
+  {
+    "name": "ToggleSprint",
+    "enabled": true,
+    "keybind": 23
+  },
+  {
+    "name": "NoClickDelay",
+    "enabled": true,
+    "keybind": 38
+  },
+  {
+    "name": "FPSDisplay",
+    "enabled": true,
+    "keybind": 33,
+    "hudX": 15,
+    "hudY": 64
+  },
+  {
+    "name": "CPSDisplay",
+    "enabled": false,
+    "keybind": 0,
+    "hudX": 116,
+    "hudY": 110
+  },
+  {
+    "name": "KeystrokesHUD",
+    "enabled": false,
+    "keybind": 0,
+    "hudX": 30,
+    "hudY": 276
+  },
+  {
+    "name": "ComboDisplay",
+    "enabled": true,
+    "keybind": 33,
+    "hudX": 13,
+    "hudY": 13
+  }
+]
