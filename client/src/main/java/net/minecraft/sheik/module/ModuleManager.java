@@ -5,6 +5,8 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.entity.Entity;
 import net.minecraft.sheik.module.modules.hud.*;
 import net.minecraft.sheik.module.modules.movement.*;
+import net.minecraft.sheik.module.modules.performance.*;
+import net.minecraft.sheik.module.modules.combat.*;
 import net.minecraft.sheik.module.modules.utility.*;
 import net.minecraft.util.DamageSource;
 
@@ -25,6 +27,9 @@ public class ModuleManager {
         register(new CPSDisplay());
         register(new KeystrokesHUD());
         register(new ComboDisplay());
+        register(new EntityCulling());
+        register(new TargetPanel());
+        register(new AimDisplay());
     }
 
     private void register(Module m) {

@@ -1,5 +1,7 @@
 package net.minecraft.sheik.ui.hud;
 
+import net.minecraft.client.Minecraft;
+import net.minecraft.item.ItemStack;
 import net.minecraft.sheik.ui.font.HudFont;
 
 public class HudPanel {
@@ -58,6 +60,53 @@ public class HudPanel {
         String value = enabled ? "ON" : "OFF";
         int color = enabled ? HudColors.GOOD : HudColors.BAD;
         return row(label, value, HudColors.TEXT, color);
+    }
+
+    public HudPanel bar(String label, float current, float max, int barColor) {
+        int h = Math.max(ROW_HEIGHT, font.getFontHeight() + 3);
+        HudUi.rect(x, cursorY, width, h, HudColors.PANEL_BG);
+        HudUi.outline(x, cursorY, width, h, HudColors.PANEL_BORDER);
+
+        font.drawStringWithShadow(label, x + PADDING, cursorY + 2, HudColors.TEXT);
+
+        int barX = x + PADDING + font.getStringWidth(label) + 3;
+        int barW = x + width - PADDING - barX;
+        int barY = cursorY + (h - 5) / 2;
+        float pct = max > 0 ? Math.min(current / max, 1.0f) : 0f;
+
+        HudUi.rect(barX, barY, barW, 5, HudColors.PANEL_BORDER);
+        HudUi.rect(barX, barY, (int)(barW * pct), 5, barColor);
+
+        cursorY += h;
+        return this;
+    }
+
+    public HudPanel bar(String label, float current, float max) {
+        float pct = max > 0 ? current / max : 0f;
+        int color = pct > 0.5f ? HudColors.GOOD : (pct > 0.25f ? 0xFFFFAA00 : HudColors.BAD);
+        return bar(label, current, max, color);
+    }
+
+    /**
+     * Renders a row of item icons. Null entries are skipped.
+     * Each icon is 16x16 with 2px spacing. The row height is 20px.
+     */
+    public HudPanel items(ItemStack... stacks) {
+        final int ICON_SIZE = 16;
+        final int ROW_H = ICON_SIZE + 4;
+        HudUi.rect(x, cursorY, width, ROW_H, HudColors.PANEL_BG);
+        HudUi.outline(x, cursorY, width, ROW_H, HudColors.PANEL_BORDER);
+
+        int iconX = x + PADDING;
+        int iconY = cursorY + (ROW_H - ICON_SIZE) / 2;
+        for (ItemStack stack : stacks) {
+            if (stack == null) continue;
+            Minecraft.getMinecraft().getRenderItem().renderItemIntoGUI(stack, iconX, iconY);
+            iconX += ICON_SIZE + 2;
+        }
+
+        cursorY += ROW_H;
+        return this;
     }
 
     public int getBottomY() {

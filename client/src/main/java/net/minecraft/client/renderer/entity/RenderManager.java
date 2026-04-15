@@ -34,6 +34,7 @@ import net.minecraft.client.settings.GameSettings;
 import net.minecraft.crash.CrashReport;
 import net.minecraft.crash.CrashReportCategory;
 import net.minecraft.entity.Entity;
+import net.minecraft.sheik.module.modules.performance.EntityCulling;
 import net.minecraft.entity.EntityLeashKnot;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.ai.EntityMinecartMobSpawner;
@@ -313,7 +314,9 @@ public class RenderManager
     public boolean shouldRender(Entity entityIn, ICamera camera, double camX, double camY, double camZ)
     {
         Render<Entity> render = this.<Entity>getEntityRenderObject(entityIn);
-        return render != null && render.shouldRender(entityIn, camera, camX, camY, camZ);
+        if (render == null || !render.shouldRender(entityIn, camera, camX, camY, camZ)) return false;
+        if (!EntityCulling.isVisible(entityIn)) return false;
+        return true;
     }
 
     public boolean renderEntityStatic(Entity entity, float partialTicks, boolean hideDebugBox)

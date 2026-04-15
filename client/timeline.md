@@ -37,6 +37,7 @@ Here's a rough timeline assuming solo development with part-time hours:
 
 **Phase 5 — Combat/Neutral Modules (3-4 weeks)**
 - Reach indicator
+- Optimal Aim Indicator
 - Opponent reach visualizer
 - Enemy health display
 - Pearl cooldown tracker
