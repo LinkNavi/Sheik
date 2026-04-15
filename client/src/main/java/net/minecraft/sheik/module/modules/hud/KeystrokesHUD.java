@@ -35,6 +35,7 @@ public class KeystrokesHUD extends Module implements HudPositionable {
 
     @Override
     public void onRender2D(ScaledResolution sr, float partialTicks) {
+        if (mc.getMinecraft().theWorld == null || Minecraft.getMinecraft().thePlayer == null) return;
         int topRowX = hudX + KEY_SIZE + GAP;
         int secondRowY = hudY + KEY_SIZE + GAP;
 

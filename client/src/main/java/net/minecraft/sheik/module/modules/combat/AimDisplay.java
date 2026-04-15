@@ -39,7 +39,9 @@ public class AimDisplay extends Module {
 
     @Override
     public void onHit(Entity entity) {
+        if (entity instanceof net.minecraft.entity.player.EntityPlayer) {
         this.target = entity;
+        }
     }
 
     @Override
@@ -99,6 +101,7 @@ public class AimDisplay extends Module {
 
     @Override
     public void onRender2D(ScaledResolution sr, float partialTicks) {
+        if (mc.getMinecraft().theWorld == null || Minecraft.getMinecraft().thePlayer == null) return;
         if (target == null || !onScreen)
             return;
 

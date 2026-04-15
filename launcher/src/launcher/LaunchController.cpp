@@ -3,6 +3,8 @@
 #include <QCoreApplication>
 #include <QDir>
 #include <QFile>
+#include <QStandardPaths>
+#include <QSysInfo>
 
 LaunchController::LaunchController(QObject *parent) : QObject(parent) {}
 
@@ -27,8 +29,29 @@ void LaunchController::launch() {
     m_logLines.clear();
     emit logLinesChanged();
 
-    const QString clientDir = QDir::cleanPath(
-        QCoreApplication::applicationDirPath() + "/../../client");
+    // Locate the client directory:
+    //   - Installed layout:  <prefix>/bin/sheik-launcher  →  <prefix>/share/sheik/client
+    //   - Dev layout:        <repo>/build/launcher/sheik-launcher  →  <repo>/client
+    const QString appDir = QCoreApplication::applicationDirPath();
+    QString clientDir;
+    {
+        // Dev tree: go up until we find a "client" sibling
+        QDir d(appDir);
+        bool found = false;
+        for (int i = 0; i < 4; ++i) {
+            if (QFile::exists(d.absolutePath() + "/client/build/libs/sheik-1.8.9-all.jar")) {
+                clientDir = d.absolutePath() + "/client";
+                found = true;
+                break;
+            }
+            d.cdUp();
+        }
+        if (!found) {
+            // Installed layout
+            clientDir = QDir::cleanPath(appDir + "/../share/sheik/client");
+        }
+    }
+    clientDir = QDir::cleanPath(clientDir);
 
     const QString jar = clientDir + "/build/libs/sheik-1.8.9-all.jar";
     if (!QFile::exists(jar)) {
@@ -36,6 +59,24 @@ void LaunchController::launch() {
         appendLog("[Launcher] Run './gradlew fatJar' inside client/ to build it first.");
         return;
     }
+
+    // Find java — prefer JAVA_HOME, then PATH
+    QString javaExe = QStringLiteral("java");
+    {
+        const QString javaHome = qEnvironmentVariable("JAVA_HOME");
+        if (!javaHome.isEmpty()) {
+#ifdef Q_OS_WIN
+            const QString candidate = javaHome + "/bin/java.exe";
+#else
+            const QString candidate = javaHome + "/bin/java";
+#endif
+            if (QFile::exists(candidate))
+                javaExe = candidate;
+        }
+    }
+
+    // On Windows the natives subfolder name is the same; just use the right separator
+    const QString nativesPath = QDir::toNativeSeparators(clientDir + "/natives");
 
     appendLog("[Launcher] Working directory: " + clientDir);
     appendLog("[Launcher] Starting Sheik client...");
@@ -51,10 +92,13 @@ void LaunchController::launch() {
             this, &LaunchController::onFinished);
 
     const QStringList args = {
-        "-Djava.library.path=natives",
-        "-jar", jar
+        "-Djava.library.path=" + nativesPath,
+        "-jar", jar,
+        "--username",    m_authUsername.isEmpty()    ? "Player" : m_authUsername,
+        "--uuid",        m_authUuid.isEmpty()        ? "0"      : m_authUuid,
+        "--accessToken", m_authAccessToken.isEmpty() ? "0"      : m_authAccessToken,
     };
-    m_process->start("java", args);
+    m_process->start(javaExe, args);
 
     setRunning(true);
     emit processStarted();
@@ -65,6 +109,12 @@ void LaunchController::kill() {
         appendLog("[Launcher] Killing process...");
         m_process->kill();
     }
+}
+
+void LaunchController::setAuthInfo(const QString &username, const QString &uuid, const QString &accessToken) {
+    m_authUsername    = username;
+    m_authUuid        = uuid;
+    m_authAccessToken = accessToken;
 }
 
 void LaunchController::onReadyRead() {

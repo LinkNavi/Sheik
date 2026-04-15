@@ -24,6 +24,7 @@ public class FPSDisplay extends Module implements HudPositionable {
     @Override
     public void onRender2D(ScaledResolution sr, float partialTicks) {
         int fps = Minecraft.getDebugFPS();
+        if (mc.getMinecraft().theWorld == null || Minecraft.getMinecraft().thePlayer == null) return;
         HudUi.label(hudX, hudY, "FPS: " + fps).draw(0, 0);
     }
 }

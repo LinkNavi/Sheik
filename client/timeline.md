@@ -8,8 +8,8 @@ Here's a rough timeline assuming solo development with part-time hours:
 - Start QML launcher skeleton (just launches the jar for now) - starting later
 
 **Phase 2 — HUD Modules (2-3 weeks)**
-- Keystrokes HUD
-- CPS display
+- Keystrokes HUD - done
+- CPS display - done
 - FPS display - done
 - Armor durability HUD
 - Potion effect timers
@@ -36,13 +36,10 @@ Here's a rough timeline assuming solo development with part-time hours:
 - Frame limiter replacement
 
 **Phase 5 — Combat/Neutral Modules (3-4 weeks)**
-- Reach indicator
-- Optimal Aim Indicator
-- Opponent reach visualizer
-- Enemy health display
-- Pearl cooldown tracker
-- Sprint reset reminder
-- Trade detector
+- Optimal Aim Indicator - done
+- Opponent reach visualizer - done
+- Enemy health display - done
+- Trade detector - done
 - Strafe suggestion
 - Rod throw predictor
 - Momentum block suggester

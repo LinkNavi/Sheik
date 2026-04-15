@@ -1,0 +1,57 @@
+---- Minecraft Crash Report ----
+// Everything's going to plan. No, really, that was supposed to happen.
+
+Time: 4/15/26 10:37 AM
+Description: Unexpected error
+
+java.lang.NullPointerException: Unexpected error
+	at net.minecraft.entity.Entity.getDistanceToEntity(Entity.java:1090)
+	at net.minecraft.sheik.module.modules.combat.ReachVisualizer.onTick(ReachVisualizer.java:30)
+	at net.minecraft.sheik.module.ModuleManager.onTick(ModuleManager.java:43)
+	at net.minecraft.sheik.SheikClient.onTick(SheikClient.java:32)
+	at net.minecraft.client.Minecraft.runGameLoop(Minecraft.java:1104)
+	at net.minecraft.client.Minecraft.run(Minecraft.java:352)
+	at net.minecraft.client.main.Main.main(Main.java:113)
+	at Start.main(Start.java:12)
+
+
+A detailed walkthrough of the error, its code path and all known details is as follows:
+---------------------------------------------------------------------------------------
+
+-- System Details --
+Details:
+	Minecraft Version: 1.8.9
+	Operating System: Linux (amd64) version 6.19.11-arch1-1
+	Java Version: 1.8.0_482, Arch Linux
+	Java VM Version: OpenJDK 64-Bit Server VM (mixed mode), Arch Linux
+	Memory: 521527936 bytes (497 MB) / 735051776 bytes (701 MB) up to 1819803648 bytes (1735 MB)
+	JVM Flags: 0 total; 
+	IntCache: cache: 0, tcache: 0, allocated: 12, tallocated: 94
+	Launched Version: GradleMCP
+	LWJGL: 2.9.4
+	OpenGL: Mesa Intel(R) UHD Graphics 630 (CFL GT2) GL version 4.6 (Compatibility Profile) Mesa 26.0.4-arch1.1, Intel
+	GL Caps: Using GL 1.3 multitexturing.
+Using GL 1.3 texture combiners.
+Using framebuffer objects because OpenGL 3.0 is supported and separate blending is supported.
+Shaders are available because OpenGL 2.1 is supported.
+VBOs are available because OpenGL 1.5 is supported.
+
+	Using VBOs: No
+	Is Modded: Very likely; Jar signature invalidated
+	Type: Client (map_client.txt)
+	Resource Packs: 
+	Current Language: ~~ERROR~~ NullPointerException: null
+	Profiler Position: N/A (disabled)
+	CPU: 6x Intel(R) Core(TM) i5-8400T CPU @ 1.70GHz
+	OptiFine Version: OptiFine_1.8.9_HD_U_M6_pre2
+	OptiFine Build: ~~NULL~~
+	Render Distance Chunks: 8
+	Mipmaps: 4
+	Anisotropic Filtering: 1
+	Antialiasing: 0
+	Multitexture: false
+	Shaders: null
+	OpenGlVersion: 4.6 (Compatibility Profile) Mesa 26.0.4-arch1.1
+	OpenGlRenderer: Mesa Intel(R) UHD Graphics 630 (CFL GT2)
+	OpenGlVendor: Intel
+	CpuCount: 6

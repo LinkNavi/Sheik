@@ -30,6 +30,8 @@ public class ModuleManager {
         register(new EntityCulling());
         register(new TargetPanel());
         register(new AimDisplay());
+        register(new TradeDetector());
+        register(new ReachVisualizer());
     }
 
     private void register(Module m) {

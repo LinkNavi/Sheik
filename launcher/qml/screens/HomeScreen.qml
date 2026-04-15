@@ -62,8 +62,9 @@ Item {
                     hoverEnabled: true
                     cursorShape: Qt.PointingHandCursor
                     onClicked: {
+                        Launcher.setAuthInfo(Auth.username, Auth.uuid, Auth.accessToken)
                         Launcher.launch()
-                        StackView.view.replace(Qt.resolvedUrl("LogScreen.qml"))
+                        root.StackView.view.replace(Qt.resolvedUrl("LogScreen.qml"))
                     }
                 }
             }
@@ -103,9 +104,8 @@ Item {
                 anchors.verticalCenter: parent.verticalCenter
                 anchors.left: playerHead.right
                 anchors.leftMargin: 8
-                // TODO: bind to C++ account model
-                text: "Not logged in"
-                color: "#666666"
+                text: Auth.loggedIn ? Auth.username : "Not logged in"
+                color: Auth.loggedIn ? "#cccccc" : "#666666"
                 font.pixelSize: 13
             }
 
@@ -120,7 +120,7 @@ Item {
 
                 Text {
                     anchors.centerIn: parent
-                    text: "Sign in"
+                    text: Auth.loggedIn ? "Sign out" : "Sign in"
                     color: "#aaaaaa"
                     font.pixelSize: 12
                 }
@@ -128,7 +128,12 @@ Item {
                 MouseArea {
                     anchors.fill: parent
                     cursorShape: Qt.PointingHandCursor
-                    onClicked: console.log("Auth flow — TODO")
+                    onClicked: {
+                        if (Auth.loggedIn)
+                            Auth.logout()
+                        else
+                            root.StackView.view.replace(Qt.resolvedUrl("LoginScreen.qml"))
+                    }
                 }
             }
         }

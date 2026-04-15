@@ -14,6 +14,7 @@ public:
 
     Q_INVOKABLE void launch();
     Q_INVOKABLE void kill();
+    Q_INVOKABLE void setAuthInfo(const QString &username, const QString &uuid, const QString &accessToken);
 
     bool running() const;
     QStringList logLines() const;
@@ -33,6 +34,10 @@ private:
     QProcess   *m_process  = nullptr;
     bool        m_running  = false;
     QStringList m_logLines;
+
+    QString m_authUsername;
+    QString m_authUuid;
+    QString m_authAccessToken;
 
     void setRunning(bool v);
     void appendLog(const QString &text);

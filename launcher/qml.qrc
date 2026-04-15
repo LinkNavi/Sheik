@@ -3,6 +3,7 @@
     <qresource prefix="/">
         <file>qml/main.qml</file>
         <file>qml/screens/HomeScreen.qml</file>
+        <file>qml/screens/LoginScreen.qml</file>
         <file>qml/screens/LogScreen.qml</file>
         <file>qml/screens/ModulesScreen.qml</file>
         <file>qml/screens/SettingsScreen.qml</file>

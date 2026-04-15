@@ -51,6 +51,7 @@ public class CPSDisplay extends Module implements HudPositionable {
     @Override
     public void onRender2D(ScaledResolution sr, float partialTicks) {
         pruneOldClicks(System.currentTimeMillis());
+        if (mc.getMinecraft().theWorld == null || Minecraft.getMinecraft().thePlayer == null) return;
         HudUi.label(hudX, hudY, "CPS: " + clickTimes.size()).draw(0, 0);
     }
 
