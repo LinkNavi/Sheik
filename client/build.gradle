@@ -69,4 +69,24 @@ task runClient(type: JavaExec) {
     workingDir = projectDir
 }
 
+task fatJar(type: Jar) {
+    group = "build"
+    description = "Assemble a self-contained jar with all runtime dependencies"
+    archiveBaseName = "sheik"
+    archiveClassifier = "all"
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+
+    manifest {
+        attributes "Main-Class": "Start"
+    }
+
+    from sourceSets.main.output
+    from {
+        configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
+    }
+    exclude "META-INF/*.SF", "META-INF/*.DSA", "META-INF/*.RSA"
+
+    dependsOn extractNatives, classes
+}
+
 compileJava.dependsOn extractNatives

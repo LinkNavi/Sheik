@@ -17,6 +17,7 @@ public class SheikClient {
         moduleManager = new ModuleManager();
         configManager.loadModules(moduleManager.getModules());
         Fonts.registerTtfFont("clean", "sheik/fonts/Raleway.ttf", 18f);
+        System.out.println("Sheik Client v1.0.0 by Sheik");
         
     }
 

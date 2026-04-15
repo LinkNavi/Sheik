@@ -1,0 +1,12 @@
+<!DOCTYPE RCC>
+<RCC version="1.0">
+    <qresource prefix="/">
+        <file>qml/main.qml</file>
+        <file>qml/screens/HomeScreen.qml</file>
+        <file>qml/screens/LogScreen.qml</file>
+        <file>qml/screens/ModulesScreen.qml</file>
+        <file>qml/screens/SettingsScreen.qml</file>
+        <file>qml/components/Sidebar.qml</file>
+        <file>qml/components/SidebarButton.qml</file>
+    </qresource>
+</RCC>
