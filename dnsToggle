@@ -1,0 +1,21 @@
+#!/bin/bash
+
+RESOLVED_CONF="/etc/systemd/resolved.conf"
+NM_CONF="/etc/NetworkManager/NetworkManager.conf"
+
+if grep -q "^DNS=" "$RESOLVED_CONF"; then
+    sudo sed -i 's/^DNS=/#DNS=/' "$RESOLVED_CONF"
+    sudo sed -i 's/^FallbackDNS=/#FallbackDNS=/' "$RESOLVED_CONF"
+    sudo sed -i 's/^DNSOverTLS=/#DNSOverTLS=/' "$RESOLVED_CONF"
+    sudo sed -i 's/^dns=/#dns=/' "$NM_CONF"
+    echo "DNS disabled"
+else
+    sudo sed -i 's/^#DNS=/DNS=/' "$RESOLVED_CONF"
+    sudo sed -i 's/^#FallbackDNS=/FallbackDNS=/' "$RESOLVED_CONF"
+    sudo sed -i 's/^#DNSOverTLS=/DNSOverTLS=/' "$RESOLVED_CONF"
+    sudo sed -i 's/^#dns=/dns=/' "$NM_CONF"
+    sudo ln -sf /run/systemd/resolve/stub-resolv.conf /etc/resolv.conf
+    echo "DNS enabled"
+fi
+
+sudo systemctl restart systemd-resolved NetworkManager

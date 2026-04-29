@@ -30,6 +30,7 @@ public class ComboDisplay extends Module  implements HudPositionable{
 
     @Override
     public void onRender2D(ScaledResolution sr, float partialTicks) {
+        if (mc.getMinecraft().theWorld == null || mc.getMinecraft().thePlayer == null) return;
         HudUi.label(hudX, hudY, "Combo: " + combo).draw(0, 0);
     }
 

@@ -13,28 +13,78 @@
     "name": "FPSDisplay",
     "enabled": true,
     "keybind": 33,
-    "hudX": 15,
-    "hudY": 64
+    "hudX": 82,
+    "hudY": 161
   },
   {
     "name": "CPSDisplay",
     "enabled": false,
     "keybind": 0,
-    "hudX": 116,
-    "hudY": 110
+    "hudX": 228,
+    "hudY": 123
   },
   {
     "name": "KeystrokesHUD",
     "enabled": false,
     "keybind": 0,
-    "hudX": 30,
-    "hudY": 276
+    "hudX": 707,
+    "hudY": 73
+  },
+  {
+    "name": "ArmourHud",
+    "enabled": true,
+    "keybind": -1,
+    "hudX": 86,
+    "hudY": 411
   },
   {
     "name": "ComboDisplay",
     "enabled": true,
     "keybind": 33,
-    "hudX": 13,
-    "hudY": 13
+    "hudX": 32,
+    "hudY": 115
+  },
+  {
+    "name": "EntityCulling",
+    "enabled": false,
+    "keybind": 0
+  },
+  {
+    "name": "TargetPanel",
+    "enabled": false,
+    "keybind": -1,
+    "hudX": 652,
+    "hudY": 278,
+    "showHealth": "true",
+    "showArmor": "true",
+    "showWeapon": "true"
+  },
+  {
+    "name": "AimDisplay",
+    "enabled": true,
+    "keybind": 35,
+    "activationDistance": "5.0",
+    "indicatorSize": "5",
+    "playersOnly": "false"
+  },
+  {
+    "name": "TradeDetector",
+    "enabled": false,
+    "keybind": -1,
+    "hudX": 151,
+    "hudY": 283
+  },
+  {
+    "name": "ReachVisualizer",
+    "enabled": true,
+    "keybind": -1
+  },
+  {
+    "name": "CustomCrosshair",
+    "enabled": false,
+    "keybind": -1,
+    "Size": "6",
+    "Gap": "2",
+    "Thickness": "1"
   }
 ]

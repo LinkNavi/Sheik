@@ -3,6 +3,7 @@
 #include <QNetworkAccessManager>
 #include <QNetworkRequest>
 #include <QNetworkReply>
+#include <QSslConfiguration>
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QJsonArray>
@@ -43,6 +44,16 @@ AuthController::AuthController(QObject *parent)
 {
     m_pollTimer->setSingleShot(false);
     connect(m_pollTimer, &QTimer::timeout, this, &AuthController::pollToken);
+
+    // Ensure all requests made through this QNAM use the SSL config
+    // patched in main.cpp (with bundled Mozilla CA certs).
+    connect(m_nam, &QNetworkAccessManager::sslErrors,
+            this, [](QNetworkReply *reply, const QList<QSslError> &errors) {
+        qWarning() << "SSL errors for" << reply->url() << ":";
+        for (const auto &e : errors)
+            qWarning() << "  " << e.errorString();
+    });
+
     loadSavedAuth();
 }
 
@@ -128,6 +139,13 @@ void AuthController::logout() {
     clearSavedAuth();
 }
 
+// Ensure each request uses the patched default SSL config (with bundled CAs)
+static QNetworkRequest makeRequest(const QUrl &url) {
+    QNetworkRequest req(url);
+    req.setSslConfiguration(QSslConfiguration::defaultConfiguration());
+    return req;
+}
+
 // ---------------------------------------------------------------------------
 // Step 1 — Request device code
 // ---------------------------------------------------------------------------
@@ -143,7 +161,7 @@ void AuthController::startDeviceFlow() {
         return;
     }
 
-    QNetworkRequest req(QUrl{DEVICE_CODE_URL});
+    auto req = makeRequest(QUrl{DEVICE_CODE_URL});
     req.setHeader(QNetworkRequest::ContentTypeHeader, "application/x-www-form-urlencoded");
 
     QUrlQuery body;
@@ -182,7 +200,7 @@ void AuthController::pollToken() {
 
     const QString clientId = loadClientId();
 
-    QNetworkRequest req(QUrl{TOKEN_URL});
+    auto req = makeRequest(QUrl{TOKEN_URL});
     req.setHeader(QNetworkRequest::ContentTypeHeader, "application/x-www-form-urlencoded");
 
     QUrlQuery body;
@@ -232,7 +250,7 @@ void AuthController::pollToken() {
 // ---------------------------------------------------------------------------
 
 void AuthController::fetchXBL() {
-    QNetworkRequest req(QUrl{XBL_URL});
+    auto req = makeRequest(QUrl{XBL_URL});
     req.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
     req.setRawHeader("Accept", "application/json");
 
@@ -272,7 +290,7 @@ void AuthController::fetchXBL() {
 // ---------------------------------------------------------------------------
 
 void AuthController::fetchXSTS() {
-    QNetworkRequest req(QUrl{XSTS_URL});
+    auto req = makeRequest(QUrl{XSTS_URL});
     req.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
     req.setRawHeader("Accept", "application/json");
 
@@ -320,7 +338,7 @@ void AuthController::fetchXSTS() {
 // ---------------------------------------------------------------------------
 
 void AuthController::fetchMCToken() {
-    QNetworkRequest req(QUrl{MC_AUTH_URL});
+    auto req = makeRequest(QUrl{MC_AUTH_URL});
     req.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
 
     QJsonObject body;
@@ -348,7 +366,7 @@ void AuthController::fetchMCToken() {
 // ---------------------------------------------------------------------------
 
 void AuthController::fetchProfile() {
-    QNetworkRequest req(QUrl{MC_PROFILE_URL});
+    auto req = makeRequest(QUrl{MC_PROFILE_URL});
     req.setRawHeader("Authorization", ("Bearer " + m_accessToken).toUtf8());
 
     QNetworkReply *reply = m_nam->get(req);
@@ -437,7 +455,7 @@ void AuthController::loadSavedAuth() {
         return;
 
     // Validate the token is still live before marking as logged in
-    QNetworkRequest req(QUrl{MC_PROFILE_URL});
+    auto req = makeRequest(QUrl{MC_PROFILE_URL});
     req.setRawHeader("Authorization", ("Bearer " + token).toUtf8());
 
     QNetworkReply *reply = m_nam->get(req);

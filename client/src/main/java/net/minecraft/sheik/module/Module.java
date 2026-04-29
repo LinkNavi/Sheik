@@ -2,13 +2,15 @@ package net.minecraft.sheik.module;
 
 import java.util.ArrayList;
 import java.util.List;
-
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.ScaledResolution;
 import net.minecraft.entity.Entity;
+import net.minecraft.sheik.SheikClient;
+import net.minecraft.sheik.ui.hud.HudNotification;
 import net.minecraft.util.DamageSource;
 
 public abstract class Module {
+
     protected final Minecraft mc = Minecraft.getMinecraft();
     private List<ModuleOption<?>> options = new ArrayList<>();
 
@@ -26,46 +28,59 @@ public abstract class Module {
     public int keybind;
     public boolean enabled;
 
-    public Module(String name, String category, String description, int keybind) {
+    public Module(
+        String name,
+        String category,
+        String description,
+        int keybind
+    ) {
         this.name = name;
         this.category = category;
         this.keybind = keybind;
         this.description = description;
     }
 
-    public void onEnable() {
-    }
+    public void onEnable() {}
 
-    public void onDisable() {
-    }
+    public void onDisable() {}
 
-    public void onTick() {
-    }
+    public void onTick() {}
 
-    public void onKeyDown(int key) {
-    }
+    public void onKeyDown(int key) {}
 
-    public void onRender2D(ScaledResolution sr, float partialTicks) {
-    }
+    public void onRender2D(ScaledResolution sr, float partialTicks) {}
 
-    public void onRender3D(float partialTicks) {
-    }
+    public void onRender3D(float partialTicks) {}
 
-    public void onKeyPress(int key) {
-    }
+    public void onKeyPress(int key) {}
 
-    public void onHit(Entity target) {
-    }
+    public void onHit(Entity target) {}
 
-    public void onHurt(DamageSource source, float amount) {
-    }
+    public void onHurt(DamageSource source, float amount) {}
 
     public void toggle() {
         enabled = !enabled;
-        if (enabled)
+        if (enabled) {
             onEnable();
-        else
+            SheikClient.getInstance()
+                .getNotificationManager()
+                .push(
+                    new HudNotification(
+                        name + " enabled",
+                        HudNotification.Type.SUCCESS
+                    )
+                );
+        } else {
             onDisable();
+            SheikClient.getInstance()
+                .getNotificationManager()
+                .push(
+                    new HudNotification(
+                        name + " disabled",
+                        HudNotification.Type.INFO
+                    )
+                );
+        }
     }
 
     public boolean isEnabled() {
@@ -78,6 +93,10 @@ public abstract class Module {
 
     public String getCategory() {
         return category;
+    }
+
+    public String getDescription() {
+        return description;
     }
 
     public int getKeybind() {

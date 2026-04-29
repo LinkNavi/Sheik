@@ -49,7 +49,7 @@ public class TargetPanel extends Module implements HudPositionable {
 
     @Override
     public void onRender2D(ScaledResolution sr, float partialTicks) {
-        if (mc.getMinecraft().theWorld == null || Minecraft.getMinecraft().thePlayer == null) return;
+        if (mc.getMinecraft().theWorld == null || mc.getMinecraft().thePlayer == null) return;
         if (targetName == null) return;
 
         net.minecraft.sheik.ui.hud.HudPanel panel =

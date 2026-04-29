@@ -7,117 +7,246 @@ import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.sheik.module.Module;
 import net.minecraft.sheik.module.ModuleOption;
 import net.minecraft.util.AxisAlignedBB;
-import org.lwjgl.BufferUtils;
-import org.lwjgl.opengl.GL11;
-import org.lwjgl.util.glu.GLU;
-
-import java.nio.FloatBuffer;
-import java.nio.IntBuffer;
 
 public class AimDisplay extends Module {
 
-    private final ModuleOption<Float> activationDistance = new ModuleOption<>("activationDistance", 5.0f, 5.0f,
-            Float.class);
+	private final ModuleOption<Float> activationDistance = new ModuleOption<>(
+		"activationDistance",
+		5.0f,
+		5.0f,
+		Float.class
+	);
 
-    private final ModuleOption<Integer> indicatorSize = new ModuleOption<>("indicatorSize", 5, 5, Integer.class);
+	private final ModuleOption<Integer> indicatorSize = new ModuleOption<>(
+		"indicatorSize",
+		5,
+		5,
+		Integer.class
+	);
 
-    private Entity target;
+	private final ModuleOption<Boolean> playersOnly = new ModuleOption<>(
+		"playersOnly",
+		true,
+		true,
+		Boolean.class
+	);
 
-    // The optimal world-space aim point (updated every tick)
-    private double aimX, aimY, aimZ;
+	private Entity target;
 
-    // Projected screen position (updated in onRender3D)
-    private int screenX, screenY;
-    private boolean onScreen;
+	public AimDisplay() {
+		super(
+			"AimDisplay",
+			"COMBAT",
+			"Displays the best place to aim per target",
+			-1
+		);
+		addOption(activationDistance);
+		addOption(indicatorSize);
+		addOption(playersOnly);
+	}
 
-    public AimDisplay() {
-        super("AimDisplay", "COMBAT", "Displays the best place to aim per target", -1);
+	@Override
+	public void onHit(Entity entity) {
+		if (
+			playersOnly.getValue() &&
+			!(entity instanceof net.minecraft.entity.player.EntityPlayer)
+		) {
+			return;
+		}
+		this.target = entity;
+	}
 
-        addOption(activationDistance);
-        addOption(indicatorSize);
-    }
+	@Override
+	public void onTick() {
+		if (!(target instanceof EntityLivingBase)) {
+			target = null;
+			return;
+		}
+		EntityLivingBase living = (EntityLivingBase) target;
+		if (
+			living.isDead ||
+			living.getDistanceToEntity(mc.thePlayer) >
+			activationDistance.getValue()
+		) {
+			target = null;
+			return;
+		}
+	}
 
-    @Override
-    public void onHit(Entity entity) {
-        if (entity instanceof net.minecraft.entity.player.EntityPlayer) {
-        this.target = entity;
-        }
-    }
+	/**
+	 * Projects a world-space point onto the 2D screen using the player's
+	 * camera yaw/pitch and the game's FOV. Returns null if the point is
+	 * behind the camera.
+	 *
+	 * @param wx        world X
+	 * @param wy        world Y
+	 * @param wz        world Z
+	 * @param sr        current ScaledResolution
+	 * @param partialTicks interpolation factor
+	 * @return int[]{screenX, screenY} in scaled GUI coordinates, or null if behind camera
+	 */
+	private int[] worldToScreen(
+		double wx,
+		double wy,
+		double wz,
+		ScaledResolution sr,
+		float partialTicks
+	) {
+		// Interpolated eye position
+		double eyeX =
+			mc.thePlayer.lastTickPosX +
+			(mc.thePlayer.posX - mc.thePlayer.lastTickPosX) * partialTicks;
+		double eyeY =
+			mc.thePlayer.lastTickPosY +
+			(mc.thePlayer.posY - mc.thePlayer.lastTickPosY) * partialTicks +
+			mc.thePlayer.getEyeHeight();
+		double eyeZ =
+			mc.thePlayer.lastTickPosZ +
+			(mc.thePlayer.posZ - mc.thePlayer.lastTickPosZ) * partialTicks;
 
-    @Override
-    public void onTick() {
-        if (!(target instanceof EntityLivingBase)) {
-            target = null;
-            return;
-        }
-        EntityLivingBase living = (EntityLivingBase) target;
-        if (living.isDead || living.getDistanceToEntity(mc.thePlayer) > activationDistance.getValue()) {
-            target = null;
-            return;
-        }
+		// Vector from eye to target point
+		double dx = wx - eyeX;
+		double dy = wy - eyeY;
+		double dz = wz - eyeZ;
 
-        // Closest point on the target's AABB to our eye — maximum reach for minimum
-        // distance
-        AxisAlignedBB bb = living.getEntityBoundingBox();
-        double eyeX = mc.thePlayer.posX;
-        double eyeY = mc.thePlayer.posY + mc.thePlayer.getEyeHeight();
-        double eyeZ = mc.thePlayer.posZ;
+		// Camera yaw & pitch (interpolated)
+		float yaw =
+			mc.thePlayer.prevRotationYaw +
+			(mc.thePlayer.rotationYaw - mc.thePlayer.prevRotationYaw) *
+			partialTicks;
+		float pitch =
+			mc.thePlayer.prevRotationPitch +
+			(mc.thePlayer.rotationPitch - mc.thePlayer.prevRotationPitch) *
+			partialTicks;
 
-        aimX = Math.max(bb.minX, Math.min(eyeX, bb.maxX));
-        aimY = Math.max(bb.minY, Math.min(eyeY, bb.maxY));
-        aimZ = Math.max(bb.minZ, Math.min(eyeZ, bb.maxZ));
-    }
+		double yawRad = Math.toRadians(yaw);
+		double pitchRad = Math.toRadians(pitch);
 
-    @Override
-    public void onRender3D(float partialTicks) {
-        if (target == null)
-            return;
+		double sinYaw = Math.sin(yawRad);
+		double cosYaw = Math.cos(yawRad);
+		double sinPitch = Math.sin(pitchRad);
+		double cosPitch = Math.cos(pitchRad);
 
-        FloatBuffer model = BufferUtils.createFloatBuffer(16);
-        FloatBuffer proj = BufferUtils.createFloatBuffer(16);
-        IntBuffer view = BufferUtils.createIntBuffer(16);
-        FloatBuffer win = BufferUtils.createFloatBuffer(3);
+		// Forward (look direction)
+		double fwdX = -sinYaw * cosPitch;
+		double fwdY = -sinPitch;
+		double fwdZ = cosYaw * cosPitch;
 
-        GL11.glGetFloat(GL11.GL_MODELVIEW_MATRIX, model);
-        GL11.glGetFloat(GL11.GL_PROJECTION_MATRIX, proj);
-        GL11.glGetInteger(GL11.GL_VIEWPORT, view);
+		// Right — horizontal plane only. At yaw=0 we look +Z, so right = -X.
+		double rightX = -cosYaw;
+		double rightY = 0.0;
+		double rightZ = -sinYaw;
 
-        double rx = mc.getRenderManager().viewerPosX;
-        double ry = mc.getRenderManager().viewerPosY;
-        double rz = mc.getRenderManager().viewerPosZ;
+		// Up = right × forward (gives correct camera up for any pitch)
+		double upX = rightY * fwdZ - rightZ * fwdY;
+		double upY = rightZ * fwdX - rightX * fwdZ;
+		double upZ = rightX * fwdY - rightY * fwdX;
 
-        onScreen = GLU.gluProject(
-                (float) (aimX - rx),
-                (float) (aimY - ry),
-                (float) (aimZ - rz),
-                model, proj, view, win)
-                && win.get(2) < 1.0f;
+		// Project delta onto camera axes
+		double forward = dx * fwdX + dy * fwdY + dz * fwdZ;
+		double right = dx * rightX + dy * rightY + dz * rightZ;
+		double up = dx * upX + dy * upY + dz * upZ;
 
-        if (onScreen) {
-            screenX = (int) win.get(0);
-            screenY = (int) (view.get(3) - win.get(1)); // flip Y (GL origin is bottom-left)
-        }
-    }
+		// Behind the camera — don't draw
+		if (forward <= 0.0) return null;
 
-    @Override
-    public void onRender2D(ScaledResolution sr, float partialTicks) {
-        if (mc.getMinecraft().theWorld == null || Minecraft.getMinecraft().thePlayer == null) return;
-        if (target == null || !onScreen)
-            return;
+		// Field of view — Minecraft stores it in degrees
+		double fovDeg = mc.gameSettings.fovSetting;
+		double fovRad = Math.toRadians(fovDeg);
 
-        // Distance from eye to the closest AABB point (what the server actually checks)
-        double eyeX = mc.thePlayer.posX;
-        double eyeY = mc.thePlayer.posY + mc.thePlayer.getEyeHeight();
-        double eyeZ = mc.thePlayer.posZ;
-        double dist = Math.sqrt(
-                (aimX - eyeX) * (aimX - eyeX) +
-                        (aimY - eyeY) * (aimY - eyeY) +
-                        (aimZ - eyeZ) * (aimZ - eyeZ));
+		int screenW = sr.getScaledWidth();
+		int screenH = sr.getScaledHeight();
 
-        float reach = mc.playerController.getCurrentGameType().isCreative() ? 5.0f : 3.0f;
-        int color = dist <= reach ? 0xFF00FF00 : 0xFFFF4444; // green = in range, red = out of range
+		// Half-screen sizes in "forward=1" NDC units
+		double halfH = Math.tan(fovRad / 2.0);
+		double halfW = halfH * ((double) screenW / (double) screenH);
 
-        int size = indicatorSize.getValue();
-        Gui.drawRect(screenX - size, screenY - size, screenX + size, screenY + size, color);
-    }
+		// NDC [-1..1]
+		double ndcX = right / (forward * halfW);
+		double ndcY = -up / (forward * halfH);
+
+		// Guard against wildly off-screen values
+		if (ndcX < -4.0 || ndcX > 4.0 || ndcY < -4.0 || ndcY > 4.0) return null;
+
+		int gx = (int) ((ndcX + 1.0) * 0.5 * screenW);
+		int gy = (int) ((ndcY + 1.0) * 0.5 * screenH);
+
+		return new int[] { gx, gy };
+	}
+
+	@Override
+	public void onRender2D(ScaledResolution sr, float partialTicks) {
+		if (
+			mc.getMinecraft().theWorld == null ||
+			mc.getMinecraft().thePlayer == null
+		) return;
+		if (!(target instanceof EntityLivingBase)) return;
+
+		EntityLivingBase living = (EntityLivingBase) target;
+
+		// Interpolated target position
+		double tx =
+			living.lastTickPosX +
+			(living.posX - living.lastTickPosX) * partialTicks;
+		double ty =
+			living.lastTickPosY +
+			(living.posY - living.lastTickPosY) * partialTicks;
+		double tz =
+			living.lastTickPosZ +
+			(living.posZ - living.lastTickPosZ) * partialTicks;
+
+		// Rebuild AABB around interpolated position
+		AxisAlignedBB bb = living.getEntityBoundingBox();
+		double hw = (bb.maxX - bb.minX) / 2.0;
+		double height = bb.maxY - bb.minY;
+		double hz = (bb.maxZ - bb.minZ) / 2.0;
+
+		double bbMinX = tx - hw,
+			bbMaxX = tx + hw;
+		double bbMinY = ty,
+			bbMaxY = ty + height;
+		double bbMinZ = tz - hz,
+			bbMaxZ = tz + hz;
+
+		// Interpolated eye position for closest-point calculation
+		double eyeX =
+			mc.thePlayer.lastTickPosX +
+			(mc.thePlayer.posX - mc.thePlayer.lastTickPosX) * partialTicks;
+		double eyeY =
+			mc.thePlayer.lastTickPosY +
+			(mc.thePlayer.posY - mc.thePlayer.lastTickPosY) * partialTicks +
+			mc.thePlayer.getEyeHeight();
+		double eyeZ =
+			mc.thePlayer.lastTickPosZ +
+			(mc.thePlayer.posZ - mc.thePlayer.lastTickPosZ) * partialTicks;
+
+		// Closest point on the AABB to our eye — this is what the server checks
+		double aimX = Math.max(bbMinX, Math.min(eyeX, bbMaxX));
+		double aimY = Math.max(bbMinY, Math.min(eyeY, bbMaxY));
+		double aimZ = Math.max(bbMinZ, Math.min(eyeZ, bbMaxZ));
+
+		int[] screen = worldToScreen(aimX, aimY, aimZ, sr, partialTicks);
+		if (screen == null) return;
+
+		int gx = screen[0];
+		int gy = screen[1];
+
+		// Distance from (non-interpolated) eye to closest AABB point
+		double eyeXt = mc.thePlayer.posX;
+		double eyeYt = mc.thePlayer.posY + mc.thePlayer.getEyeHeight();
+		double eyeZt = mc.thePlayer.posZ;
+		double dist = Math.sqrt(
+			(aimX - eyeXt) * (aimX - eyeXt) +
+				(aimY - eyeYt) * (aimY - eyeYt) +
+				(aimZ - eyeZt) * (aimZ - eyeZt)
+		);
+
+		float reach = mc.playerController.getCurrentGameType().isCreative()
+			? 5.0f
+			: 3.0f;
+		int color = dist <= reach ? 0xFF00FF00 : 0xFFFF4444;
+
+		int size = indicatorSize.getValue();
+		Gui.drawRect(gx - size, gy - size, gx + size, gy + size, color);
+	}
 }

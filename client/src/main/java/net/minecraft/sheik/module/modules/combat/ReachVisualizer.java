@@ -21,7 +21,7 @@ public class ReachVisualizer extends Module {
     @Override
     public void onHit(Entity entity) {
         if (entity instanceof net.minecraft.entity.player.EntityPlayer) {
-        this.target = entity;
+            this.target = entity;
         }
     }
 
@@ -34,10 +34,9 @@ public class ReachVisualizer extends Module {
 
     @Override
     public void onRender3D(float partialTicks) {
-        if (mc.getMinecraft().theWorld == null || Minecraft.getMinecraft().thePlayer == null) return;
+        if (mc.getMinecraft().theWorld == null || mc.getMinecraft().thePlayer == null) return;
         if (target == null) return;
 
-        // Interpolated eye position for smooth rendering
         EntityLivingBase living = (EntityLivingBase) target;
         double ex = target.lastTickPosX + (target.posX - target.lastTickPosX) * partialTicks;
         double ey = target.lastTickPosY + (target.posY - target.lastTickPosY) * partialTicks
@@ -66,7 +65,6 @@ public class ReachVisualizer extends Module {
     }
 
     private void drawSphere(double cx, double cy, double cz, double radius) {
-        // Latitude circles (horizontal rings)
         for (int lat = 0; lat <= LATITUDES; lat++) {
             double phi = Math.PI * lat / LATITUDES - Math.PI / 2;
             double r   = Math.cos(phi) * radius;
@@ -79,7 +77,6 @@ public class ReachVisualizer extends Module {
             GL11.glEnd();
         }
 
-        // Longitude semicircles (vertical arcs)
         for (int lon = 0; lon < LONGITUDES; lon++) {
             double theta = Math.PI * lon / LONGITUDES;
             GL11.glBegin(GL11.GL_LINE_STRIP);
