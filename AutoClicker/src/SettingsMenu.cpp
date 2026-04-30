@@ -1,6 +1,6 @@
 #include "SettingsMenu.h"
 #include <QFormLayout>
-
+#include "IPC.h"
 SettingsMenu::SettingsMenu(QWidget *parent)
     : QMainWindow(parent), settings("Sheik", "AutoClicker")
 {
@@ -29,7 +29,10 @@ SettingsMenu::SettingsMenu(QWidget *parent)
     leftLayout->setContentsMargins(14, 16, 14, 14);
 
     chkLeftEnabled = new QCheckBox("Enabled", this);
-
+chkLeftOnlyWithSword = new QCheckBox("Only with sword", this);
+chkLeftOnlyWithAxe   = new QCheckBox("Only with axe", this);
+leftLayout->addRow("", chkLeftOnlyWithSword);
+leftLayout->addRow("", chkLeftOnlyWithAxe);
     spinLeftInterval = new QSpinBox(this);
     spinLeftInterval->setRange(10, 5000);
     spinLeftInterval->setSuffix(" ms");
@@ -131,6 +134,8 @@ void SettingsMenu::updateLeftEnabled(bool enabled) {
     spinLeftRandMin->setEnabled(enabled);
     spinLeftRandMax->setEnabled(enabled);
     chkLeftAllowMining->setEnabled(enabled);
+chkLeftOnlyWithSword->setEnabled(enabled);
+chkLeftOnlyWithAxe->setEnabled(enabled);
 }
 
 void SettingsMenu::updateRightEnabled(bool enabled) {
@@ -152,18 +157,26 @@ void SettingsMenu::loadSettings() {
     spinRightRandMin->setValue(settings.value("rightRandMin", 0).toInt());
     spinRightRandMax->setValue(settings.value("rightRandMax", 0).toInt());
     chkRightOnlyWithBlock->setChecked(settings.value("rightOnlyWithBlock", false).toBool());
+chkLeftOnlyWithSword->setChecked(settings.value("leftOnlyWithSword", false).toBool());
+chkLeftOnlyWithAxe->setChecked(settings.value("leftOnlyWithAxe", false).toBool());
 
     updateLeftEnabled(chkLeftEnabled->isChecked());
     updateRightEnabled(chkRightEnabled->isChecked());
 }
-
+uint8_t SettingsMenu::leftHeldItemMask() const {
+    uint8_t mask = 0;
+    if (chkLeftOnlyWithSword->isChecked()) mask |= (1 << static_cast<uint8_t>(HeldItem::SWORD));
+    if (chkLeftOnlyWithAxe->isChecked())   mask |= (1 << static_cast<uint8_t>(HeldItem::AXE));
+    return mask;
+}
 void SettingsMenu::saveSettings() {
     settings.setValue("leftEnabled",      chkLeftEnabled->isChecked());
     settings.setValue("leftInterval",     spinLeftInterval->value());
     settings.setValue("leftRandMin",      spinLeftRandMin->value());
     settings.setValue("leftRandMax",      spinLeftRandMax->value());
     settings.setValue("leftAllowMining",  chkLeftAllowMining->isChecked());
-
+settings.setValue("leftOnlyWithSword", chkLeftOnlyWithSword->isChecked());
+settings.setValue("leftOnlyWithAxe",   chkLeftOnlyWithAxe->isChecked());
     settings.setValue("rightEnabled",       chkRightEnabled->isChecked());
     settings.setValue("rightInterval",      spinRightInterval->value());
     settings.setValue("rightRandMin",       spinRightRandMin->value());

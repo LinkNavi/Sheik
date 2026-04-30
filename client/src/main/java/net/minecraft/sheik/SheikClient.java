@@ -9,6 +9,7 @@ import net.minecraft.sheik.ui.ModMenuScreen;
 import net.minecraft.sheik.ui.font.Fonts;
 import net.minecraft.sheik.ui.hud.NotificationManager;
 
+import org.lwjgl.opengl.Display;
 public class SheikClient {
 
 	private static SheikClient INSTANCE;
@@ -40,6 +41,7 @@ public class SheikClient {
 			ipcController.writeState();
 		}
 		moduleManager.onTick();
+		Display.setTitle("Sheik Client");
 	}
 
 	public void onRender2D(float partialTicks) {

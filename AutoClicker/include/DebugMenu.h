@@ -36,6 +36,7 @@ private:
     QLabel *lblBlockVal;
     QLabel *lblGuiVal;
     QLabel *lblHeldVal;
+    QLabel *lblHeldItemTypeVal;
 
     QProgressBar *hpBar;
     QLabel       *lblRawDump;

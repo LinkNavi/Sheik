@@ -179,6 +179,7 @@ import org.lwjgl.Sys;
 import org.lwjgl.input.Keyboard;
 import org.lwjgl.input.Mouse;
 import org.lwjgl.opengl.ContextCapabilities;
+
 import org.lwjgl.opengl.Display;
 import org.lwjgl.opengl.DisplayMode;
 import org.lwjgl.opengl.GL11;
@@ -546,7 +547,7 @@ public class Minecraft implements IThreadListener, IPlayerUsage
     private void createDisplay() throws LWJGLException
     {
         Display.setResizable(true);
-        Display.setTitle("Minecraft 1.8.9");
+        Display.setTitle("Sheik Client");
 
         try
         {

@@ -8,9 +8,9 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) {
     stack = new QStackedWidget(this);
     setCentralWidget(stack);
 
-    mainMenu     = new MainMenu(this);
-    debugMenu    = new DebugMenu(this);
-    settingsMenu = new SettingsMenu(this);
+   settingsMenu = new SettingsMenu(this);
+mainMenu     = new MainMenu(settingsMenu, this);
+debugMenu    = new DebugMenu(this);
 
     stack->addWidget(mainMenu);      // index 0
     stack->addWidget(debugMenu);     // index 1
@@ -20,7 +20,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) {
     connect(mainMenu,     &MainMenu::goToSettings, this, [this]() { setScreen(Screen::SettingsMenu); });
     connect(debugMenu,    &DebugMenu::goBack,       this, [this]() { setScreen(Screen::MainMenu);     });
     connect(settingsMenu, &SettingsMenu::goBack,    this, [this]() { setScreen(Screen::MainMenu);     });
-
+connect(settingsMenu, &SettingsMenu::settingsChanged, mainMenu, &MainMenu::onSettingsChanged);
     setScreen(Screen::MainMenu);
     setWindowTitle("Sheik AutoClicker");
     setFixedSize(320, 480);

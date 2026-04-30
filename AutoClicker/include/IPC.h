@@ -8,6 +8,16 @@
 #include <iostream>
 
 #pragma pack(push, 1)
+
+enum class HeldItem{
+	NONE,
+	BLOCK,
+	SWORD,
+	AXE,
+};
+
+
+#pragma pack(push, 1)
 struct GameState {
     int32_t lookingAtBlock;
     int32_t heldItem;
@@ -16,10 +26,10 @@ struct GameState {
     int32_t targetId;
     float targetHealth;
     uint8_t inGui;
+    uint8_t currentHeldItem; // stores HeldItem enum value
 };
 #pragma pack(pop)
-
-static_assert(sizeof(GameState) == 25, "Unexpected padding in GameState");
+static_assert(sizeof(GameState) == 26, "Unexpected padding in GameState");
 
 class SheikIPC {
 public:
@@ -34,7 +44,9 @@ public:
 
     void update();  // Refresh read with memory barrier
     const GameState* state() const { return state_; }
-
+HeldItem heldItemType() const {
+    return static_cast<HeldItem>(state_->currentHeldItem);
+}
     bool valid() const { return state_ != nullptr; }
 
 private:

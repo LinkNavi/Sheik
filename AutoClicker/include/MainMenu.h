@@ -1,54 +1,54 @@
 #pragma once
-
 #include <QMainWindow>
-#include <QPushButton>
+#include <QWidget>
 #include <QVBoxLayout>
 #include <QHBoxLayout>
-#include <QWidget>
 #include <QLabel>
-#include <QTimer>
+#include <QPushButton>
 #include <QProgressBar>
+#include <QTimer>
 #include "IPC.h"
-#include <QStyle>
+#include "Clicker.h"
+#include "SettingsMenu.h"
+
 class MainMenu : public QMainWindow {
     Q_OBJECT
-
 public:
-    explicit MainMenu(QWidget *parent = nullptr);
-
-    bool isRunning() const { return running; }
+    explicit MainMenu(SettingsMenu *settings, QWidget *parent = nullptr);
 
 signals:
     void goToDebug();
     void goToSettings();
 
 private slots:
-    void updateLoop();
     void toggleRunning();
+    void updateLoop();
+    void clickLoop();
+public slots:
+    void onSettingsChanged();
+
 
 private:
+    SettingsMenu   *settings;
+    SheikIPC        ipc;
+    Clicker         clicker;
+    bool            running = false;
+
     QWidget     *centralWidget;
     QVBoxLayout *layout;
     QHBoxLayout *topBarLayout;
-    QHBoxLayout *optionsLayout;
-
-    // Status bar
-    QLabel      *lblConnectionDot;
-    QLabel      *lblConnectionText;
-
-    // Info panel
-    QWidget     *infoPanel;
-    QLabel      *lblTargetId;
-    QLabel      *lblTargetHP;
-    QProgressBar *hpBar;
-
-    // Buttons
-    QPushButton *btnToggle;
     QPushButton *btnSettings;
+    QPushButton *btnToggle;
     QPushButton *btnDebugMenu;
     QPushButton *btnQuit;
 
-    QTimer      *updateTimer;
-    SheikIPC     ipc;
-    bool         running = false;
+    QLabel      *lblConnectionDot;
+    QLabel      *lblConnectionText;
+    QLabel      *lblTargetId;
+    QLabel      *lblTargetHP;
+    QProgressBar *hpBar;
+    QWidget     *infoPanel;
+
+    QTimer *updateTimer;
+    QTimer *clickTimer;
 };

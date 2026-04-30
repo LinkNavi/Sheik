@@ -1,7 +1,9 @@
 #include "MainMenu.h"
 #include <QDebug>
-
-MainMenu::MainMenu(QWidget *parent) : QMainWindow(parent) {
+#include <QStyle>
+MainMenu::MainMenu(SettingsMenu *settings, QWidget *parent)
+    : QMainWindow(parent), settings(settings)
+{
     centralWidget = new QWidget(this);
     setCentralWidget(centralWidget);
 
@@ -18,7 +20,6 @@ MainMenu::MainMenu(QWidget *parent) : QMainWindow(parent) {
     auto *appTitle = new QLabel("SHEIK", this);
     appTitle->setObjectName("appTitle");
 
-    // Connection status
     lblConnectionDot  = new QLabel("●", this);
     lblConnectionText = new QLabel("Disconnected", this);
     lblConnectionDot->setObjectName("dotDisconnected");
@@ -46,7 +47,6 @@ MainMenu::MainMenu(QWidget *parent) : QMainWindow(parent) {
     contentLayout->setSpacing(12);
     contentLayout->setContentsMargins(20, 20, 20, 20);
 
-    // Target info panel
     infoPanel = new QWidget(this);
     infoPanel->setObjectName("infoPanel");
     auto *infoPanelLayout = new QVBoxLayout(infoPanel);
@@ -75,13 +75,11 @@ MainMenu::MainMenu(QWidget *parent) : QMainWindow(parent) {
     infoPanelLayout->addWidget(hpBar);
     contentLayout->addWidget(infoPanel);
 
-    // Toggle button (big, prominent)
     btnToggle = new QPushButton("START", this);
     btnToggle->setObjectName("btnToggleOff");
     btnToggle->setMinimumHeight(52);
     contentLayout->addWidget(btnToggle);
 
-    // Secondary buttons row
     auto *secRow = new QHBoxLayout();
     btnDebugMenu = new QPushButton("Debug", this);
     btnQuit      = new QPushButton("Quit", this);
@@ -104,6 +102,11 @@ MainMenu::MainMenu(QWidget *parent) : QMainWindow(parent) {
     updateTimer = new QTimer(this);
     connect(updateTimer, &QTimer::timeout, this, &MainMenu::updateLoop);
     updateTimer->start(100);
+
+    // Click timer
+    clickTimer = new QTimer(this);
+    clickTimer->setInterval(50);
+    connect(clickTimer, &QTimer::timeout, this, &MainMenu::clickLoop);
 }
 
 void MainMenu::toggleRunning() {
@@ -111,15 +114,20 @@ void MainMenu::toggleRunning() {
     if (running) {
         btnToggle->setText("STOP");
         btnToggle->setObjectName("btnToggleOn");
+        clickTimer->start();
     } else {
         btnToggle->setText("START");
         btnToggle->setObjectName("btnToggleOff");
+        clickTimer->stop();
     }
-    // Force style re-evaluation after objectName change
     btnToggle->style()->unpolish(btnToggle);
     btnToggle->style()->polish(btnToggle);
 }
-
+// MainMenu.cpp
+void MainMenu::onSettingsChanged() {
+    if (running)
+        clickTimer->setInterval(settings->leftIntervalMs());
+}
 void MainMenu::updateLoop() {
     if (!ipc.valid()) {
         lblConnectionDot->setObjectName("dotDisconnected");
@@ -132,8 +140,7 @@ void MainMenu::updateLoop() {
     ipc.update();
     const auto* s = ipc.state();
 
-    // Connection status
-    bool connected = (s->lookingAtBlock || s->targetId != 0);
+    bool connected = (s->lookingAtBlock || s->targetId != -1);
     QString dotObj = connected ? "dotConnected" : "dotIdle";
     QString statusStr = connected ? "Connected" : "Idle";
 
@@ -144,8 +151,7 @@ void MainMenu::updateLoop() {
         lblConnectionDot->style()->polish(lblConnectionDot);
     }
 
-    // Target info
-    if (s->targetId != 0) {
+    if (s->targetId != -1) {
         lblTargetId->setText(QString("Entity #%1").arg(s->targetId));
         float hp = s->targetHealth;
         lblTargetHP->setText(QString("HP: %1 / 20").arg(hp, 0, 'f', 1));
@@ -154,5 +160,40 @@ void MainMenu::updateLoop() {
         lblTargetId->setText("No target");
         lblTargetHP->setText("HP: —");
         hpBar->setValue(0);
+    }
+}
+
+void MainMenu::clickLoop() {
+    if (!running || !ipc.valid()) return;
+    const auto* s = ipc.state();
+    if (s->inGui) return;
+
+    HeldItem held = ipc.heldItemType();
+
+    // Left click
+    if (settings->leftEnabled()) {
+        uint8_t mask = settings->leftHeldItemMask();
+        bool maskPass = (mask == 0) || (mask & (1 << static_cast<uint8_t>(held)));
+        bool miningPass = settings->leftAllowMining() || !s->lookingAtBlock;
+        if (maskPass && miningPass) {
+            clicker.leftClick();
+            clickTimer->setInterval(
+                settings->leftIntervalMs() +
+                clicker.randJitter(settings->leftRandMin(), settings->leftRandMax())
+            );
+            return;
+        }
+    }
+
+    // Right click
+    if (settings->rightEnabled()) {
+        bool blockPass = !settings->rightOnlyWithBlock() || (held == HeldItem::BLOCK);
+        if (blockPass) {
+            clicker.rightClick();
+            clickTimer->setInterval(
+                settings->rightIntervalMs() +
+                clicker.randJitter(settings->rightRandMin(), settings->rightRandMax())
+            );
+        }
     }
 }

@@ -10,6 +10,9 @@
 #include <QGroupBox>
 #include <QCheckBox>
 #include <QSettings>
+#include <cstdint>
+
+
 
 class SettingsMenu : public QMainWindow {
     Q_OBJECT
@@ -17,13 +20,15 @@ class SettingsMenu : public QMainWindow {
 public:
     explicit SettingsMenu(QWidget *parent = nullptr);
 
+
+
     // Left click
     bool    leftEnabled()     const;
     int     leftIntervalMs()  const;
     int     leftRandMin()     const;
     int     leftRandMax()     const;
     bool    leftAllowMining() const;
-
+    uint8_t leftHeldItemMask() const;
     // Right click
     bool    rightEnabled()       const;
     int     rightIntervalMs()    const;
@@ -58,7 +63,8 @@ private:
     QSpinBox  *spinLeftRandMin;
     QSpinBox  *spinLeftRandMax;
     QCheckBox *chkLeftAllowMining;
-
+QCheckBox *chkLeftOnlyWithSword;
+QCheckBox *chkLeftOnlyWithAxe;
     // Right click group
     QGroupBox *grpRight;
     QCheckBox *chkRightEnabled;
