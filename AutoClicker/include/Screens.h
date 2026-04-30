@@ -3,5 +3,5 @@
 enum class Screen {
     MainMenu,
     DebugMenu,
-    OptionsMenu
+    SettingsMenu
 };

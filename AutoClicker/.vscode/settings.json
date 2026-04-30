@@ -1,4 +1,5 @@
 {
     "C_Cpp.default.compileCommands": "/home/link/Programming/Sheik/AutoClicker/builddir/compile_commands.json",
-    "C_Cpp.default.configurationProvider": "mesonbuild.mesonbuild"
+    "C_Cpp.default.configurationProvider": "mesonbuild.mesonbuild",
+    "mesonbuild.configureOnOpen": false
 }
