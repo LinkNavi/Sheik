@@ -64,7 +64,7 @@
     "enabled": true,
     "keybind": 35,
     "activationDistance": "5.0",
-    "indicatorSize": "5",
+    "indicatorSize": "10",
     "playersOnly": "false"
   },
   {

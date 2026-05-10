@@ -1,7 +1,9 @@
 #pragma once
 #include <cstdint>
 #include <cstdlib>
-#include <libei.h>
+
+// Forward declaration to avoid X11/Qt header conflicts
+typedef struct _XDisplay Display;
 
 class Clicker {
 public:
@@ -11,7 +13,5 @@ public:
     void rightClick();
     int randJitter(int min, int max);
 private:
-    ei* ei_;
-    ei_seat* seat_;
-    ei_device* dev_;
-};;
+    Display* display_;
+};

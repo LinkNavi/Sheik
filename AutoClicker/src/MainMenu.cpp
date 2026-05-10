@@ -1,6 +1,52 @@
 #include "MainMenu.h"
 #include <QDebug>
 #include <QStyle>
+#include <fcntl.h>
+#include <unistd.h>
+#include <dirent.h>
+#include <cstring>
+#include <cstdio>
+#include <linux/input.h>
+
+// ── Find the real mouse evdev device ─────────────────────────────
+bool MainMenu::openEvdev() {
+    DIR *d = opendir("/dev/input");
+    if (!d) {
+        fprintf(stderr, "Evdev: failed to open /dev/input\n");
+        return false;
+    }
+    struct dirent *ent;
+    while ((ent = readdir(d)) != nullptr) {
+        if (strncmp(ent->d_name, "event", 5) != 0) continue;
+        char path[64];
+        snprintf(path, sizeof(path), "/dev/input/%s", ent->d_name);
+        int fd = open(path, O_RDONLY | O_NONBLOCK);
+        if (fd < 0) {
+            fprintf(stderr, "Evdev: failed to open %s\n", path);
+            continue;
+        }
+        // Get device name
+        char name[256] = "Unknown";
+        ioctl(fd, EVIOCGNAME(sizeof(name)), name);
+        fprintf(stderr, "Evdev: checking %s - %s\n", path, name);
+        
+        // Check it has BTN_LEFT (mouse)
+        uint8_t bits[KEY_MAX / 8 + 1] = {};
+        ioctl(fd, EVIOCGBIT(EV_KEY, sizeof(bits)), bits);
+        if (bits[BTN_LEFT / 8] & (1 << (BTN_LEFT % 8))) {
+            evdevFd = fd;
+            closedir(d);
+            fprintf(stderr, "Evdev: selected %s (%s) with BTN_LEFT capability\n", path, name);
+            return true;
+        }
+        ::close(fd);
+    }
+    closedir(d);
+    fprintf(stderr, "Evdev: no suitable mouse device found\n");
+    return false;
+}
+
+
 MainMenu::MainMenu(SettingsMenu *settings, QWidget *parent)
     : QMainWindow(parent), settings(settings)
 {
@@ -98,15 +144,46 @@ MainMenu::MainMenu(SettingsMenu *settings, QWidget *parent)
     connect(btnDebugMenu, &QPushButton::clicked, this, [this]() { emit goToDebug(); });
     connect(btnSettings,  &QPushButton::clicked, this, [this]() { emit goToSettings(); });
 
-    // IPC timer
     updateTimer = new QTimer(this);
     connect(updateTimer, &QTimer::timeout, this, &MainMenu::updateLoop);
     updateTimer->start(100);
 
-    // Click timer
     clickTimer = new QTimer(this);
-    clickTimer->setInterval(50);
     connect(clickTimer, &QTimer::timeout, this, &MainMenu::clickLoop);
+
+    // ── Evdev mouse listener ─────────────────────────────────────
+    if (openEvdev()) {
+        evdevNotifier = new QSocketNotifier(evdevFd, QSocketNotifier::Read, this);
+        connect(evdevNotifier, &QSocketNotifier::activated, this, &MainMenu::onEvdevReadable);
+    } else {
+        fprintf(stderr, "Warning: could not open mouse evdev\n");
+        evdevNotifier = nullptr;
+    }
+}
+
+MainMenu::~MainMenu() {
+    if (evdevFd >= 0) ::close(evdevFd);
+}
+
+void MainMenu::onEvdevReadable() {
+    struct input_event ev;
+    int count = 0;
+    while (read(evdevFd, &ev, sizeof(ev)) == sizeof(ev)) {
+        count++;
+        if (ev.type != EV_KEY) continue;
+        fprintf(stderr, "Evdev event: type=%d code=%d value=%d\n", ev.type, ev.code, ev.value);
+        if (ev.code == BTN_LEFT)  {
+            leftHeld  = (ev.value == 1);
+            fprintf(stderr, "  -> leftHeld = %d\n", leftHeld);
+        }
+        if (ev.code == BTN_RIGHT) {
+            rightHeld = (ev.value == 1);
+            fprintf(stderr, "  -> rightHeld = %d\n", rightHeld);
+        }
+    }
+    if (count > 0) {
+        fprintf(stderr, "onEvdevReadable: processed %d events\n", count);
+    }
 }
 
 void MainMenu::toggleRunning() {
@@ -114,6 +191,7 @@ void MainMenu::toggleRunning() {
     if (running) {
         btnToggle->setText("STOP");
         btnToggle->setObjectName("btnToggleOn");
+        clickTimer->setInterval(settings->leftIntervalMs());
         clickTimer->start();
     } else {
         btnToggle->setText("START");
@@ -123,11 +201,12 @@ void MainMenu::toggleRunning() {
     btnToggle->style()->unpolish(btnToggle);
     btnToggle->style()->polish(btnToggle);
 }
-// MainMenu.cpp
+
 void MainMenu::onSettingsChanged() {
     if (running)
         clickTimer->setInterval(settings->leftIntervalMs());
 }
+
 void MainMenu::updateLoop() {
     if (!ipc.valid()) {
         lblConnectionDot->setObjectName("dotDisconnected");
@@ -169,31 +248,40 @@ void MainMenu::clickLoop() {
     if (s->inGui) return;
 
     HeldItem held = ipc.heldItemType();
+    fprintf(stderr, "leftHeld=%d rightHeld=%d\n", leftHeld, rightHeld);
 
-    // Left click
-    if (settings->leftEnabled()) {
+    // Left click — only if left mouse button is physically held
+    bool leftClicked = false;
+    if (leftHeld && settings->leftEnabled()) {
         uint8_t mask = settings->leftHeldItemMask();
         bool maskPass = (mask == 0) || (mask & (1 << static_cast<uint8_t>(held)));
         bool miningPass = settings->leftAllowMining() || !s->lookingAtBlock;
         if (maskPass && miningPass) {
             clicker.leftClick();
-            clickTimer->setInterval(
-                settings->leftIntervalMs() +
-                clicker.randJitter(settings->leftRandMin(), settings->leftRandMax())
-            );
-            return;
+            leftClicked = true;
         }
     }
 
-    // Right click
-    if (settings->rightEnabled()) {
+    // Right click — only if right mouse button is physically held
+    bool rightClicked = false;
+    if (rightHeld && settings->rightEnabled()) {
         bool blockPass = !settings->rightOnlyWithBlock() || (held == HeldItem::BLOCK);
         if (blockPass) {
             clicker.rightClick();
-            clickTimer->setInterval(
-                settings->rightIntervalMs() +
-                clicker.randJitter(settings->rightRandMin(), settings->rightRandMax())
-            );
+            rightClicked = true;
         }
+    }
+
+    // Set next interval based on which button fired
+    if (leftClicked) {
+        clickTimer->setInterval(
+            settings->leftIntervalMs() +
+            clicker.randJitter(settings->leftRandMin(), settings->leftRandMax())
+        );
+    } else if (rightClicked) {
+        clickTimer->setInterval(
+            settings->rightIntervalMs() +
+            clicker.randJitter(settings->rightRandMin(), settings->rightRandMax())
+        );
     }
 }

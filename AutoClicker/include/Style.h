@@ -237,6 +237,7 @@ QSpinBox, QComboBox, QKeySequenceEdit {
     border: 1px solid #2e3240;
     border-radius: 4px;
     padding: 5px 8px;
+    min-height: 28px;
     color: #e8eaf0;
     font-size: 13px;
     font-family: "JetBrains Mono", "Cascadia Code", "Fira Code", monospace;
